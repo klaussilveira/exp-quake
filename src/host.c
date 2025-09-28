@@ -866,7 +866,7 @@ void Host_Init(quakeparms_t* parms)
     com_argc = parms->argc;
     com_argv = parms->argv;
 
-    Memory_Init(parms->membase, parms->memsize);
+    Memory_Init();
     Cbuf_Init();
     Cmd_Init();
     V_Init();
