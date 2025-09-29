@@ -1,20 +1,12 @@
-# cleanquake
+# exp-quake
 
-cleanquake is a fork of [SDLQuake 1.0.9](https://www.libsdl.org/projects/quake/).
-It has been stripped down and modernized to serve as a clean base for anyone
-interested in creating new Quake source ports.
+Just a playground for experimenting with software-rendered Quake on Linux.
 
-* Builds and runs on 64-bit systems
-* Updated to use SDL2
-* Removed unused headers and functions
-* Less cruft
-
-The idea is to remove as much as possible to make learning and tinkering more
-approachable.
+![exp-quake](https://github.com/user-attachments/assets/5b6cbb11-f55f-41fa-94bc-b7467c2ece86)
 
 ## Building
 
-cleanquake uses SDL2 development libraries. On Debian:
+Needs SDL2 development libraries. On Debian:
 
     $ apt install libsdl2-dev
 
@@ -22,5 +14,6 @@ Then just run make:
 
     $ make
 
-You can use the same command-line arguments as the original Quake,
-such as `-fullscreen`, `-width`, `-height`, or `-nosound`.
+For debug:
+
+    $ make debug
