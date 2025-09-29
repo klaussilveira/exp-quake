@@ -42,8 +42,7 @@ cvar_t m_side = { "m_side", "0.8", true };
 
 client_static_t cls;
 client_state_t cl;
-// FIXME: put these on hunk?
-efrag_t cl_efrags[MAX_EFRAGS];
+
 entity_t cl_entities[MAX_EDICTS];
 entity_t cl_static_entities[MAX_STATIC_ENTITIES];
 lightstyle_t cl_lightstyle[MAX_LIGHTSTYLES];
@@ -51,6 +50,8 @@ dlight_t cl_dlights[MAX_DLIGHTS];
 
 int cl_numvisedicts;
 entity_t* cl_visedicts[MAX_VISEDICTS];
+
+extern void CL_Init_EFrags(void);
 
 /*
 =====================
@@ -72,21 +73,13 @@ void CL_ClearState(void)
     SZ_Clear(&cls.message);
 
     // clear other arrays
-    memset(cl_efrags, 0, sizeof(cl_efrags));
     memset(cl_entities, 0, sizeof(cl_entities));
     memset(cl_dlights, 0, sizeof(cl_dlights));
     memset(cl_lightstyle, 0, sizeof(cl_lightstyle));
     memset(cl_temp_entities, 0, sizeof(cl_temp_entities));
     memset(cl_beams, 0, sizeof(cl_beams));
 
-    //
-    // allocate the efrags and chain together into a free list
-    //
-    cl.free_efrags = cl_efrags;
-    for (i = 0; i < MAX_EFRAGS - 1; i++) {
-        cl.free_efrags[i].entnext = &cl.free_efrags[i + 1];
-    }
-    cl.free_efrags[i].entnext = NULL;
+    CL_Init_EFrags();
 }
 
 /*
@@ -429,10 +422,6 @@ void CL_RelinkEntities(void)
     // start on the entity after the world
     for (i = 1, ent = cl_entities + 1; i < cl.num_entities; i++, ent++) {
         if (!ent->model) { // empty slot
-            if (ent->forcelink) {
-                R_RemoveEfrags(ent); // just became empty
-            }
-
             continue;
         }
 

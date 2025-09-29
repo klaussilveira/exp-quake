@@ -86,8 +86,6 @@ typedef struct {
     vec3_t start, end;
 } beam_t;
 
-#define MAX_EFRAGS 640
-
 #define MAX_MAPSTRING 2048
 #define MAX_DEMOS 8
 #define MAX_DEMONAME 16
@@ -262,8 +260,6 @@ extern cvar_t m_side;
 
 extern client_state_t cl;
 
-// FIXME, allocate dynamically
-extern efrag_t cl_efrags[MAX_EFRAGS];
 extern entity_t cl_entities[MAX_EDICTS];
 extern entity_t cl_static_entities[MAX_STATIC_ENTITIES];
 extern lightstyle_t cl_lightstyle[MAX_LIGHTSTYLES];

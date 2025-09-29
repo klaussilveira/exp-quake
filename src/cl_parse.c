@@ -693,18 +693,10 @@ CL_ParseStatic
 void CL_ParseStatic(void)
 {
     entity_t* ent;
-    int i;
 
-    i = cl.num_statics;
-    if (i >= MAX_STATIC_ENTITIES) {
-        Host_Error("Too many static entities");
-    }
-
-    ent = &cl_static_entities[i];
-    cl.num_statics++;
+    ent = (entity_t*)Hunk_Alloc(sizeof(entity_t));
     CL_ParseBaseline(ent);
 
-    // copy it to the current state
     ent->model = cl.model_precache[ent->baseline.modelindex];
     ent->frame = ent->baseline.frame;
     ent->colormap = vid.colormap;

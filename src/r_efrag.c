@@ -40,44 +40,20 @@ vec3_t r_emins, r_emaxs;
 
 entity_t* r_addent;
 
-/*
-================
-R_RemoveEfrags
-
-Call when removing an object from the world or moving it to another position
-================
-*/
-void R_RemoveEfrags(entity_t* ent)
+void CL_Init_EFrags(void)
 {
-    efrag_t *ef, *old, *walk, **prev;
+    cl.free_efrags = (efrag_t*)Hunk_Alloc(sizeof(efrag_t));
+    memset(cl.free_efrags, 0, sizeof(efrag_t));
+}
 
-    ef = ent->efrag;
-
-    while (ef) {
-        prev = &ef->leaf->efrags;
-        while (1) {
-            walk = *prev;
-            if (!walk) {
-                break;
-            }
-
-            if (walk == ef) { // remove this fragment
-                *prev = ef->leafnext;
-                break;
-            } else {
-                prev = &walk->leafnext;
-            }
-        }
-
-        old = ef;
-        ef = ef->entnext;
-
-        // put it on the free list
-        old->entnext = cl.free_efrags;
-        cl.free_efrags = old;
+void CL_Fetch_Free_EFrag(void)
+{
+    if (cl.free_efrags->entnext == NULL) {
+        cl.free_efrags->entnext = (efrag_t*)Hunk_Alloc(sizeof(efrag_t));
+        memset(cl.free_efrags->entnext, 0, sizeof(efrag_t));
     }
 
-    ent->efrag = NULL;
+    cl.free_efrags = cl.free_efrags->entnext;
 }
 
 /*
@@ -107,13 +83,7 @@ void R_SplitEntityOnNode(mnode_t* node)
 
         // grab an efrag off the free list
         ef = cl.free_efrags;
-        if (!ef) {
-            Con_Printf("Too many efrags!\n");
-
-            return; // no free fragments...
-        }
-
-        cl.free_efrags = cl.free_efrags->entnext;
+        CL_Fetch_Free_EFrag();
 
         ef->entity = r_addent;
 
