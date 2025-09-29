@@ -577,26 +577,79 @@ void D_PolysetDrawSpans8(spanpackage_t* pspanpackage)
             llight = pspanpackage->light;
             lzi = pspanpackage->zi;
 
+            // Precompute screen (x,y) for this span once
+            int pixelIndex0 = (int)(lpdest - d_viewbuffer);
+            int py = pixelIndex0 / screenwidth;
+            int px = pixelIndex0 - py * screenwidth;
+
+            // Handy typed pointers (avoid void* arithmetic)
+            byte* skin = (byte*)r_affinetridesc.pskin;
+            byte* cmap = (byte*)acolormap;
+            const int skinw = r_affinetridesc.skinwidth;
+            const int skinh = r_affinetridesc.skinheight;
+
             do {
                 if ((lzi >> 16) >= *lpz) {
-                    *lpdest = ((byte*)acolormap)[*lptex + (llight & 0xFF00)];
-                    // gel mapping					*lpdest = gelmap[*lpdest];
-                    *lpz = lzi >> 16;
+                    if (r_udither.value == 0) {
+                        *lpdest = cmap[*lptex + (llight & 0xFF00)];
+                        *lpz = lzi >> 16;
+                    } else {
+                        // Recover integer S,T from lptex
+                        // lptex points at current texel: offset = s_int + t_int*skinw
+                        int texofs = lptex - skin;
+                        int t_int = (int)(texofs / skinw);
+                        int s_int = (int)(texofs - (int)t_int * skinw);
+
+                        // Index into 2x2 ordered dither using screen parity
+                        int X = px & 1;
+                        int Y = py & 1;
+
+                        int idiths = s_int + ((lsfrac + r_ditherkernel[X][Y][0]) >> 16);
+                        int iditht = t_int + ((ltfrac + r_ditherkernel[X][Y][1]) >> 16);
+
+                        // Clamp to skin bounds (avoid OOB)
+                        if ((unsigned)idiths >= (unsigned)skinw) {
+                            if (idiths < 0) {
+                                idiths = 0;
+                            } else {
+                                idiths = skinw - 1;
+                            }
+                        }
+
+                        if ((unsigned)iditht >= (unsigned)skinh) {
+                            if (iditht < 0) {
+                                iditht = 0;
+                            } else {
+                                iditht = skinh - 1;
+                            }
+                        }
+
+                        // Fetch texel + light
+                        byte texel = skin[iditht * skinw + idiths];
+                        *lpdest = cmap[texel + (llight & 0xFF00)];
+                        *lpz = lzi >> 16;
+                    }
                 }
 
+                // Step to next pixel in span
                 lpdest++;
+                px++; // Next screen x (py is constant for span)
                 lzi += r_zistepx;
                 lpz++;
                 llight += r_lstepx;
+
+                // Advance texture pointer & fractions
                 lptex += a_ststepxwhole;
                 lsfrac += a_sstepxfrac;
-                lptex += lsfrac >> 16;
+                lptex += (lsfrac >> 16);
                 lsfrac &= 0xFFFF;
                 ltfrac += a_tstepxfrac;
+
                 if (ltfrac & 0x10000) {
-                    lptex += r_affinetridesc.skinwidth;
+                    lptex += skinw;
                     ltfrac &= 0xFFFF;
                 }
+
             } while (--lcount);
         }
 

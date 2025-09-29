@@ -354,17 +354,38 @@ void D_DrawSpans8(espan_t* pspan)
                 }
             }
 
-            do {
-                *pdest++ = *(pbase + (s >> 16) + (t >> 16) * cachewidth);
-                s += sstep;
-                t += tstep;
-            } while (--spancount > 0);
+            if (r_udither.value == 0) {
+                do {
+                    *pdest++ = *(pbase + (s >> 16) + (t >> 16) * cachewidth);
+                    s += sstep;
+                    t += tstep;
+                } while (--spancount > 0);
+            } else {
+                do {
+                    int idiths = s;
+                    int iditht = t;
+
+                    int X = (pspan->u + spancount) & 1;
+                    int Y = (pspan->v) & 1;
+
+                    idiths += r_ditherkernel[X][Y][0];
+                    iditht += r_ditherkernel[X][Y][1];
+
+                    idiths = idiths >> 16;
+                    idiths = idiths ? idiths - 1 : idiths;
+
+                    iditht = iditht >> 16;
+                    iditht = iditht ? iditht - 1 : iditht;
+
+                    *pdest++ = *(pbase + idiths + iditht * cachewidth);
+                    s += sstep;
+                    t += tstep;
+                } while (--spancount > 0);
+            }
 
             s = snext;
             t = tnext;
-
         } while (count > 0);
-
     } while ((pspan = pspan->pnext) != NULL);
 }
 

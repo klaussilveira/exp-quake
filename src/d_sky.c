@@ -76,6 +76,10 @@ void D_DrawSkyScans8(espan_t* pspan)
 
         count = pspan->count;
 
+        // screen coords for dithering
+        int x_dither = pspan->u;
+        const int y_dither = pspan->v;
+
         // calculate the initial s & t
         u = pspan->u;
         v = pspan->v;
@@ -91,22 +95,17 @@ void D_DrawSkyScans8(espan_t* pspan)
             count -= spancount;
 
             if (count) {
-                u += spancount;
-
-                // calculate s and t at far end of span,
-                // calculate s and t steps across span by shifting
-                D_Sky_uv_To_st(u, v, &snext, &tnext);
+                // compute end-of-span s,t using *u advanced by spancount*
+                int u_end = u + spancount;
+                D_Sky_uv_To_st(u_end, v, &snext, &tnext);
 
                 sstep = (snext - s) >> SKY_SPAN_SHIFT;
                 tstep = (tnext - t) >> SKY_SPAN_SHIFT;
             } else {
-                // calculate s and t at last pixel in span,
-                // calculate s and t steps across span by division
-                spancountminus1 = (float)(spancount - 1);
-
+                spancountminus1 = (int)(spancount - 1);
                 if (spancountminus1 > 0) {
-                    u += spancountminus1;
-                    D_Sky_uv_To_st(u, v, &snext, &tnext);
+                    int u_end = u + spancountminus1;
+                    D_Sky_uv_To_st(u_end, v, &snext, &tnext);
 
                     sstep = (snext - s) / spancountminus1;
                     tstep = (tnext - t) / spancountminus1;
@@ -114,14 +113,30 @@ void D_DrawSkyScans8(espan_t* pspan)
             }
 
             do {
-                *pdest++ = r_skysource[((t & R_SKY_TMASK) >> 8) + ((s & R_SKY_SMASK) >> 16)];
+                if (r_udither.value == 0) {
+                    *pdest++ = r_skysource[((t & R_SKY_TMASK) >> 8) + ((s & R_SKY_SMASK) >> 16)];
+                } else {
+                    int X = x_dither & 1;
+                    int Y = y_dither & 1;
+
+                    int sd = s + r_ditherkernel[X][Y][0];
+                    int td = t + r_ditherkernel[X][Y][1];
+
+                    int sidx = (sd & R_SKY_SMASK) >> 16;
+                    int tidx = (td & R_SKY_TMASK) >> 8;
+
+                    *pdest++ = r_skysource[tidx + sidx];
+                }
+
                 s += sstep;
                 t += tstep;
+                x_dither++;
             } while (--spancount > 0);
 
+            // prepare for next chunk of this span
             s = snext;
             t = tnext;
-
+            u += (count ? SKY_SPAN_MAX : 0); // u itself is only used for endpoints
         } while (count > 0);
 
     } while ((pspan = pspan->pnext) != NULL);

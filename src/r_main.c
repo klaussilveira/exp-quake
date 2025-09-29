@@ -134,8 +134,30 @@ cvar_t r_numsurfs = { "r_numsurfs", "0" };
 cvar_t r_reportedgeout = { "r_reportedgeout", "0" };
 cvar_t r_maxedges = { "r_maxedges", "0" };
 cvar_t r_numedges = { "r_numedges", "0" };
+cvar_t r_udither = { "r_udither", "1" };
 cvar_t r_aliastransbase = { "r_aliastransbase", "200" };
 cvar_t r_aliastransadj = { "r_aliastransadj", "100" };
+
+/*
+
+From: https://www.flipcode.com/archives/Texturing_As_In_Unreal.shtml
+
+Tim Sweeney's kernel:
+
+(Y&1)==0 | u+=.25, v+=.00 | u+=.50, v+=.75
+(Y&1)==1 | u+=.75, v+=.50 | u+=.00, v+=.25
+
+So our kernel in 16.16 fixed-point integers (fixed16_t):
+
+16384 / 65536 = 0.25
+32768 / 65536 = 0.50
+49152 / 65536 = 0.75
+
+*/
+const int r_ditherkernel[2][2][2] = {
+    { { FIXED16(0.25f), 0 }, { FIXED16(0.50f), FIXED16(0.75f) } },
+    { { FIXED16(0.75f), FIXED16(0.50f) }, { 0, FIXED16(0.25f) } }
+};
 
 extern cvar_t scr_fov;
 
@@ -212,6 +234,7 @@ void R_Init(void)
     Cvar_RegisterVariable(&r_reportedgeout);
     Cvar_RegisterVariable(&r_maxedges);
     Cvar_RegisterVariable(&r_numedges);
+    Cvar_RegisterVariable(&r_udither);
     Cvar_RegisterVariable(&r_aliastransbase);
     Cvar_RegisterVariable(&r_aliastransadj);
 

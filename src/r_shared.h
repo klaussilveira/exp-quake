@@ -151,6 +151,9 @@ typedef struct edge_s {
     medge_t* owner;
 } edge_t;
 
+#define FIXED16(x) ((int)((x) * 65536.0f))
+extern const int r_ditherkernel[2][2][2];
+
 #endif // _R_SHARED_H_
 
 #endif // GLQUAKE
